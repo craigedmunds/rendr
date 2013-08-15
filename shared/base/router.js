@@ -1,6 +1,8 @@
 /*global rendr*/
 
 var Backbone, BaseRouter, noop, _;
+var debug = require('debug')('rendr:BaseRouter')
+  , util = require('util');
 
 _ = require('underscore');
 Backbone = require('backbone');
@@ -50,13 +52,43 @@ BaseRouter.prototype._initOptions = function(options) {
 };
 
 BaseRouter.prototype.getController = function(controllerName) {
-  var controllerDir, controller;
-  controllerDir = this.options.paths.controllerDir;
-  try {
-    controller = require(controllerDir + "/" + controllerName + "_controller");
-  } catch (e) {
-    controller = undefined;
+  debug("BaseRouter getController controllerName=%s", controllerName);
+  
+  var controller;
+  
+  function probeForController(dir, name) {
+  
+    var path = dir + "/" + name + "_controller";
+
+    debug("BaseRouter probeForController dir=%s, name=%s, path=%s", dir, name, path);
+  
+    try {
+      controller = require(path);
+    } catch (e) {
+      controller = undefined;
+    }
+    debug("BaseRouter probeForController controller being returned : %s", controller);
+    return controller;
   }
+  
+  if (this.options.paths.controllerDirs) {
+    debug("BaseRouter controllerDirs not empty, probing : ", this.options.paths.controllerDirs);
+    for(var i = 0; i < this.options.paths.controllerDirs.length; i++) {
+      controller = probeForController(this.options.paths.controllerDirs[i], controllerName);
+
+      if (controller) {
+        break;
+      }
+    }
+  }
+
+  if (!controller) {
+    debug("BaseRouter controller not found via controllerDirs, probing this.options.paths.controllerDir : %s", this.options.paths.controllerDir);
+    controller = probeForController(this.options.paths.controllerDir, controllerName);
+  }
+
+  debug("BaseRouter controller being returned : %s", controller);
+    
   return controller;
 };
 
@@ -98,20 +130,44 @@ BaseRouter.prototype.buildRoutes = function() {
     routes.push(_.toArray(arguments));
   }
 
-  routeBuilder = require(this.options.paths.routes);
-  routes = [];
+  function buildRoutesFromPath(path) {
+    routeBuilder = require(path);
+    routes = [];
 
-  try {
-    routeBuilder(captureRoutes);
-    if (this.reverseRoutes) {
-      routes = routes.reverse();
+    try {
+      routeBuilder(captureRoutes);
+      if (this.reverseRoutes) {
+        routes = routes.reverse();
+      }
+      routes.forEach(function(route) {
+        _this.route.apply(_this, route);
+      });
+    } catch (e) {
+      throw new Error("Error building routes: " + e.message);
     }
-    routes.forEach(function(route) {
-      _this.route.apply(_this, route);
-    });
-  } catch (e) {
-    throw new Error("Error building routes: " + e.message);
   }
+
+  var routeSetting = this.options.paths.routes;
+
+  switch(typeof routeSetting) {
+    case "string":
+      buildRoutesFromPath(routeSetting);
+      break;
+    case "object":
+      if (routeSetting instanceof Array) {
+        for(var i = 0; i < routeSetting.length; i++) {
+          buildRoutesFromPath(routeSetting[i]);
+        }
+      }
+      else {
+        throw new Error("Unexpected data in options.paths.routes is not an array.");
+      }
+
+      break;
+    default:
+      throw new Error("Unexpected data in options.paths.routes : " + typeof routeSetting);
+  }
+
   return this.routes();
 };
 
