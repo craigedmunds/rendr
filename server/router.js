@@ -5,9 +5,13 @@ BaseRouter = require('../shared/base/router');
 ExpressRouter = require('express').Router;
 sanitize = require('validator').sanitize;
 
+var debug = require('debug')('rendr:ServerRouter'),
+  util = require('util');
+
 module.exports = ServerRouter;
 
 function ServerRouter() {
+  debug('ServerRouter constructor');
   this._expressRouter = new ExpressRouter();
   this.routesByPath = {};
   this.on('route:add', this.addExpressRoute, this);
@@ -33,7 +37,7 @@ ServerRouter.prototype.getParams = function(req) {
   var params = _.clone(req.query || {});
 
   req.route.keys.forEach(function(routeKey) {
-    params[routeKey.name] = req.params[routeKey.name];
+    params[routeKey.name] = req.route.params[routeKey.name];
   });
   params = this.escapeParams(params);
   return params;
@@ -45,6 +49,8 @@ ServerRouter.prototype.getParams = function(req) {
  */
 ServerRouter.prototype.getHandler = function(action, pattern, route) {
   var router = this;
+
+  debug('ServerRouter getHandler action:%s, pattern:%s, route:%s', action, pattern, route);
 
   return function(req, res, next) {
     var app, context, params, redirect;
@@ -80,6 +86,8 @@ ServerRouter.prototype.getHandler = function(action, pattern, route) {
         req: req
       };
 
+      debug('ServerRouter action.call viewPath:%s', viewPath);
+
       res.render(viewPath, viewData, function(err, html) {
         if (err) return router.handleErr(err, req, res);
         res.set(router.getHeadersForRoute(route));
@@ -91,6 +99,8 @@ ServerRouter.prototype.getHandler = function(action, pattern, route) {
 
 ServerRouter.prototype.addExpressRoute = function(routeObj) {
   var path = routeObj[0];
+
+  debug('ServerRouter addExpressRoute : ' + path);
 
   this.routesByPath[path] = routeObj;
   this._expressRouter.route('get', path, []);

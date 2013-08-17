@@ -4,11 +4,14 @@ var _ = require('underscore')
   , Router = require('./router')
   , RestAdapter = require('./data_adapter/rest_adapter')
   , ViewEngine = require('./viewEngine')
-  , middleware = require('./middleware');
+  , middleware = require('./middleware')
+  , debug = require('debug')('rendr:Server')
+  , util = require('util');
 
 module.exports = Server;
 
 function Server(expressApp, options) {
+  debug('Server constructor');
   this.options = options || {};
   _.defaults(this.options, this.defaultOptions);
 
@@ -36,6 +39,7 @@ Server.prototype.initialize = function(expressApp) {
   this.errorHandler = this.options.errorHandler = this.options.errorHandler ||
     middleware.errorHandler(this.options);
 
+  debug("Creating router %s", util.inspect(this.options))
   this.router = new Router(this.options);
 
   /**
@@ -103,6 +107,9 @@ Server.prototype.buildRendrRoutes = function(expressApp) {
   var routes, path, definition, fnChain;
 
   routes = this.router.buildRoutes();
+
+  debug('Server buildRendrRoutes : ' + util.inspect(routes));
+
   routes.forEach(function(args) {
     path = args.shift();
     definition = args.shift();

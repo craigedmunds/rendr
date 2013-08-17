@@ -7,6 +7,7 @@ var debug = require('debug')('rendr:BaseRouter')
 _ = require('underscore');
 Backbone = require('backbone');
 
+
 function noop() {}
 
 module.exports = BaseRouter;
@@ -43,6 +44,13 @@ BaseRouter.prototype.initialize = function(options) {};
 
 BaseRouter.prototype._initOptions = function(options) {
   var paths;
+
+  debug("BaseRouter _initOptions options=%s", util.inspect(options));
+  debug("BaseRouter _initOptions rendr.entryPath=%s", rendr.entryPath);
+  
+  if (options) {
+    debug("BaseRouter _initOptions options.paths=%s", util.inspect(options.paths))
+  }
 
   this.options = options || {};
   paths = this.options.paths = this.options.paths || {};

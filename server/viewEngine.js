@@ -2,11 +2,15 @@
 
 var path = require('path')
   , _ = require('underscore')
-  , layoutTemplate;
+  , layoutTemplate
+  , debug = require('debug')('rendr:ViewEngine');
 
 module.exports = exports = ViewEngine;
 
 function ViewEngine(options) {
+
+  debug('ViewEngine constructor, options : %s', options);
+
   this.options = options || {};
 
   /**
@@ -16,6 +20,9 @@ function ViewEngine(options) {
 }
 
 ViewEngine.prototype.render = function render(viewPath, data, callback) {
+
+  debug('ViewEngine render, options : %s', viewPath);
+
   var app, layoutData;
 
   data.locals = data.locals || {};
@@ -33,6 +40,9 @@ ViewEngine.prototype.render = function render(viewPath, data, callback) {
  * Render with a layout.
  */
 ViewEngine.prototype.renderWithLayout = function renderWithLayout(locals, app, callback) {
+  
+  debug('ViewEngine renderWithLayout');
+  
   this.getLayoutTemplate(app, function(err, templateFn) {
     if (err) return callback(err);
     var html = templateFn(locals);
@@ -57,6 +67,9 @@ ViewEngine.prototype.getLayoutTemplate = function getLayoutTemplate(app, callbac
 };
 
 ViewEngine.prototype.getViewHtml = function getViewHtml(viewPath, locals, app) {
+  
+  debug('ViewEngine getViewHtml, options : %s', viewPath);
+
   var BaseView, View, name, view, basePath;
 
   basePath = path.join('app', 'views');
